@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Romain</title>
+
+    <style type="text/css" media="screen">
+        label {
+            display: block;
+        }
+
+        textarea {
+            display: block;
+            -webkit-border-radius: 5px;
+            -moz-border-radius: 5px;
+            border-radius: 5px;
+            color: #303a3e;
+            height: 15em;
+            padding: 1em;
+            width: 100%;
+        }
+
+        input {
+            display: block;
+            -webkit-border-radius: 5px;
+            -moz-border-radius: 5px;
+            border-radius: 5px;
+            width: 50%;
+            height: 2.5em;
+        }
+
+        input:required:invalid,
+        input:focus:invalid {
+            background-color: #faa;
+        }
+    </style>
+
+    <form id="form">
+        <p>
+            <label>
+                Dataset Id or url
+                <input required id="datasetId" type="text"
+                    pattern="^(\w{8})-(\w{4})-(\w{4})-(\w{4})-(\w{12})$|^https:\/\/app.powerbi.com\/[^ ]*\/datasets\/(\w{8})-(\w{4})-(\w{4})-(\w{4})-(\w{12})[^ ]*$"
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+            </label>
+        </p>
+        <p>
+            <label>
+                Table name or DAX</br>
+                <textarea required id="tableField" placeholder="" value=""></textarea>
+            </label>
+        </p>
+    </form>
+    <div id="result" class="">
+        <p>Download your connection file: <a id="odcResultLink" href="#" target="_blank" download="myFile.odc"></a>
+            <br>
+            <br></p>
+        <p>Or share this link:<br>
+            <a id="SharingLink" href="#" target="_blank"></a></p>
+        
+
+    </div>
+    <div id="help" class="">
+    <p><br> Instructions on <a href="https://littlebigfrog.xyz/can-i-have-it-in-excel-tool">littlebigfrog.xyz</a></p>
+    <p><br> Source code on <a
+            href="https://github.com/LittleBigFrog/LittleBigFrog.github.io/blob/main/can-I-have-it-in-Excel.html">GitHub</a>
+    </p>
+</div>
+
+    <script>
+        const form = document.getElementById('form');
+        const datasetId = document.getElementById('datasetId');
+        const tableField = document.getElementById('tableField');
+        const result = document.getElementById('result');
+        const odcResultLink = document.getElementById('odcResultLink');
+        const SharingLink = document.getElementById('SharingLink');
+        const github_url = new URL('https://littlebigfrog.github.io/can-I-have-it-in-Excel')
+        // Callback: Update #result if form fields are valid
+        const update = function (event) {
+            if (
+                !datasetId.checkValidity() ||
+                !tableField.checkValidity()
+            ) {
+                // Hide result
+                result.classList.remove('isVisible');
+                return;
+            };
+
+            // Update link text & href
+            result.classList.add('isVisible');
+            odcResultLink.innerHTML = hrefText();
+            odcResultLink.href = `data:attachment/text,${encodeURIComponent(getOutputText())}`;
+            github_url.searchParams.set("datasetID", datasetIdClean());
+            github_url.searchParams.set("table", daxQuery());
+            SharingLink.innerHTML = github_url;
+            SharingLink.href = github_url;
+        }
+
+        // Return the output text from the form field values
+        const getQueryText = function () {
+            return tableField.value.replace(/\n/g, 'bibi');
+        }
+        const datasetIdClean = function () {
+            let result;
+            if (datasetId.value.includes("http") == true) {
+                result = datasetId.value.slice(datasetId.value.indexOf('/datasets/') + '/datasets/'.length).substr(
+                    0, 36);
+            } else {
+                result = datasetId.value;
+            }
+            return result;
+        }
+        const daxQuery = function () {
+            let result;
+            if (tableField.value.toLowerCase().includes("evaluate") == true) {
+                result = tableField.value.replace(/\n/g, "&#10;&#13;");
+            } else {
+                result = 'evaluate ' + tableField.value.replace(/\n/g, "&#10;&#13;");
+            }
+            return result;
+        }
+        const hrefText = function () {
+            let result;
+            if (tableField.value.toLowerCase().includes("evaluate") == true) {
+                result = 'Custom Dax table.odc';
+            } else {
+                result = tableField.value + '.odc';
+            }
+            return result;
+        }
+
+        const getOutputText = function () {
+            return `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv=Content-Type content="text/x-ms-odc; charset=utf-8">
+<meta name=ProgId content=ODC.Table>
+<meta name=SourceType content=OLEDB>
+<title>Connection</title>
+<xml id=docprops>
+  <o:DocumentProperties xmlns:o="urn:schemas-microsoft-com:office:office" xmlns="http://www.w3.org/TR/REC-html40">
+    <o:Name>Connection</o:Name>
+  </o:DocumentProperties>
+</xml>
+<xml id=msodc>
+  <odc:OfficeDataConnection xmlns:odc="urn:schemas-microsoft-com:office:odc" xmlns="http://www.w3.org/TR/REC-html40">
+    <odc:Connection odc:Type="OLEDB">
+      <odc:ConnectionString>Provider=MSOLAP.8;
+      Integrated Security=ClaimsToken;
+      Persist Security Info=True;
+      Initial Catalog=sobe_wowvirtualserver-${datasetIdClean()}};
+      Data Source=pbiazure://api.powerbi.com;
+      MDX Compatibility=1;Safety Options=2;
+      MDX Missing Member Mode=Error;
+      Identity Provider=https://login.microsoftonline.com/common, https://analysis.windows.net/powerbi/api, 929d0ec0-7a41-4b1e-bc7c-b754a28bddcc;
+      Update Isolation Level=2</odc:ConnectionString>
+      <odc:CommandType>Default</odc:CommandType>
+      <odc:CommandText>
+        ${daxQuery()}
+      </odc:CommandText>
+    </odc:Connection>
+  </odc:OfficeDataConnection>
+</xml>
+</head>
+</html>`;
+        }
+        // Call update() on form keyup events
+        form.addEventListener('keyup', update);
+
+        // Call update() immediately
+        update();
+    </script>
+
+    </body>
+
+</html>

@@ -1,154 +1,196 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PowerBI Can I have it in Excel by littlebigfrog.xyz</title>
 
     <style type="text/css" media="screen">
+        * {
+            box-sizing: border-box;
+        }
         label {
             display: block;
+            margin-bottom: 1em;
+            width: 100%;
+            max-width: 30em;
         }
 
         textarea {
-            display: block;
-            -webkit-border-radius: 5px;
-            -moz-border-radius: 5px;
             border-radius: 5px;
             color: #303a3e;
             height: 15em;
             padding: 1em;
-            width: 50%;
+            width: 100%;
         }
 
         input {
             display: block;
-            -webkit-border-radius: 5px;
-            -moz-border-radius: 5px;
             border-radius: 5px;
-            width: 50%;
             height: 2.5em;
+            width: 100%;
         }
 
-        input:required:invalid,
+        textarea:invalid,
+        input:invalid,
         input:focus:invalid {
             background-color: #faa;
         }
+
+        p {
+            margin-bottom: 2em;
+        }
+
         #result {
-         border: 1px solid #333;
-         font-family: monospace;
-         padding: 1em;
-         display: none;
-      }
+            border: 1px solid #333;
+            font-family: monospace;
+            padding: 1em;
+            display: none;
+        }
 
-      #result.isVisible {
-         display: inherit;
-      }
-
-
+        #result.isVisible {
+            display: inherit;
+        }
     </style>
-    <h3>Power BI <i>Can I have it in Excel?</i> tool </h3>
-    <p>Get an Excel table connected to your dataset<br><br></p>
 </head>
 <body>
+    <h3>Power BI <i>Can I have it in Excel?</i> tool </h3>
+    <p>Get an Excel table connected to your dataset</p>
     <form id="form">
-        <p>
-            <label>
-                Dataset Id or url
-                <input required id="datasetId" type="text"
-                    pattern="^(\w{8})-(\w{4})-(\w{4})-(\w{4})-(\w{12})$|^https:\/\/app.powerbi.com\/[^ ]*\/datasets\/(\w{8})-(\w{4})-(\w{4})-(\w{4})-(\w{12})[^ ]*$"
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-            </label>
-        </p>
-        <p>
-            <label>
-                Table name or DAX</br>
-                <textarea required id="tableField" placeholder="" value=""></textarea>
-            </label>
-        </p>
+        <label>
+            Dataset Id or URL
+            <input required id="datasetId" type="text"
+                pattern="^(\w{8})-(\w{4})-(\w{4})-(\w{4})-(\w{12})$|^https:\/\/app.powerbi.com\/[^ ]*\/datasets\/(\w{8})-(\w{4})-(\w{4})-(\w{4})-(\w{12})[^ ]*$"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        </label>
+        <label>
+            Table name or DAX</br>
+            <textarea required id="tableName" placeholder="" value=""></textarea>
+        </label>
     </form>
-    <div id="result" class="">
-        <p>Download your connection file: <a id="odcResultLink" href="#" target="_blank" download="myFile.odc"></a>
-            <br>
-            <br></p>
-        <p>Or share this link:<br>
-            <a id="SharingLink" href="#" target="_blank"></a></p>
-        
 
+    <div id="result">
+        <p>Download your connection file: <a id="odcResultLink" href="#" target="_blank" download="myFile.odc"></a></p>
+        <p>Or share this link:<br><a id="sharingLink" href="#" target="_blank"></a></p>
     </div>
-    <div id="help" class="">
-    <p><br> Instructions on <a href="https://littlebigfrog.xyz/can-i-have-it-in-excel-tool">littlebigfrog.xyz</a></p>
-    <p><br> Source code on <a
-            href="https://github.com/LittleBigFrog/LittleBigFrog.github.io/blob/main/can-I-have-it-in-Excel.html">GitHub</a>
-    </p>
-</div>
+
+    <div id="help">
+        <p>Instructions on <a href="https://littlebigfrog.xyz/can-i-have-it-in-excel-tool">littlebigfrog.xyz</a></p>
+        <p>Source code on <a href="https://github.com/LittleBigFrog/LittleBigFrog.github.io/blob/main/can-I-have-it-in-Excel.html">GitHub</a>
+        </p>
+    </div>
 
     <script>
-        const form = document.getElementById('form');
-        const datasetId = document.getElementById('datasetId');
-        const tableField = document.getElementById('tableField');
-        const result = document.getElementById('result');
-        const odcResultLink = document.getElementById('odcResultLink');
-        const SharingLink = document.getElementById('SharingLink');
-        const github_url = new URL('https://littlebigfrog.github.io/can-I-have-it-in-Excel')
-        // Callback: Update #result if form fields are valid
-        const update = function (event) {
+        /**
+         * Listen for form keyup events
+         */
+        function init(){
+            get('form').addEventListener('keyup', update);
+            update();
+        }
+
+        /**
+         * getElementById helper function
+         */
+        function get(id) {
+            return document.getElementById(id);
+        }
+
+        /**
+         * Update #result & show if form fields are valid
+         */
+        function update(event) {
+
+            // Display result if fields validate, otherwise exit
+            get('result').classList.toggle("isVisible", isValidInputs());
+            if (!isValidInputs()) return;
+
+            // Update result link text & href
+            const odcResultLink = get('odcResultLink');
+            odcResultLink.innerHTML = getResultLinkText();
+            odcResultLink.download = getResultLinkText();
+            odcResultLink.href = getOdcResultHref();
+
+            // Update githubUrl & sharing link
+            const url = new URL('https://littlebigfrog.github.io/can-I-have-it-in-Excel');
+            url.searchParams.set("datasetIdInput", getDatasetId());
+            url.searchParams.set("table", getDaxQuery());
+
+            const link = get('sharingLink');
+            link.innerHTML = link.href = url;
+        }
+
+        /**
+         * Get value of tableName input
+         */
+        function getTableName(){
+            return get('tableName').value;
+        }
+
+        /**
+         * Check if inputs validate
+         */
+        function isValidInputs(){
+            return get('datasetId').checkValidity() && get('tableName').checkValidity();
+        }
+
+        /**
+         * Return the output text from the form field values
+         */
+        function getQueryText() {
+            return getTableName().replace(/\n/g, 'bibi');
+        }
+
+        /**
+         * Clean & return the dataset id input value
+         */
+        function getDatasetId() {
+           const result = get('datasetId').value;
+
+           if (!result.includes("http")) {
+              return result;
+           }
+
+           return result.slice(
+              result.indexOf("/datasets/") + "/datasets/".length
+              ).substr(0, 36);
+
+        }
+
+        /**
+         * Compose the Dax query string
+         */
+        function getDaxQuery() {
             if (
-                !datasetId.checkValidity() ||
-                !tableField.checkValidity()
+                getTableName()
+                .toLowerCase()
+                .includes("evaluate")
             ) {
-                // Hide result
-                result.classList.remove('isVisible');
-                return;
-            };
+                return getTableName().replace(/\n/g, "&#10;&#13;");
+            }
 
-            // Update link text & href
-            result.classList.add('isVisible');
-            odcResultLink.innerHTML = hrefText();
-            odcResultLink.href = `data:attachment/text,${encodeURIComponent(getOutputText())}`;
-            github_url.searchParams.set("datasetID", datasetIdClean());
-            github_url.searchParams.set("table", daxQuery());
-            SharingLink.innerHTML = github_url;
-            SharingLink.href = github_url;
+            return "evaluate " + getTableName().replace(/\n/g, "&#10;&#13;");
         }
 
-        // Return the output text from the form field values
-        const getQueryText = function () {
-            return tableField.value.replace(/\n/g, 'bibi');
-        }
-        const datasetIdClean = function () {
-            let result;
-            if (datasetId.value.includes("http") == true) {
-                result = datasetId.value.slice(datasetId.value.indexOf('/datasets/') + '/datasets/'.length).substr(
-                    0, 36);
-            } else {
-                result = datasetId.value;
+        /**
+         * Create text for the result link
+         */
+        function getResultLinkText() {
+            if (
+                getTableName()
+                .toLowerCase()
+                .includes("evaluate")
+            ) {
+                return 'Custom Dax table.odc';
             }
-            return result;
-        }
-        const daxQuery = function () {
-            let result;
-            if (tableField.value.toLowerCase().includes("evaluate") == true) {
-                result = tableField.value.replace(/\n/g, "&#10;&#13;");
-            } else {
-                result = 'evaluate ' + tableField.value.replace(/\n/g, "&#10;&#13;");
-            }
-            return result;
-        }
-        const hrefText = function () {
-            let result;
-            if (tableField.value.toLowerCase().includes("evaluate") == true) {
-                result = 'Custom Dax table.odc';
-            } else {
-                result = tableField.value + '.odc';
-            }
-            return result;
+
+            return getTableName() + '.odc';
         }
 
-        const getOutputText = function () {
-            return `
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns="http://www.w3.org/TR/REC-html40">
+        function getOdcResultHref() {
+            return 'data:attachment/text,'
+                + encodeURIComponent(
+`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 <meta http-equiv=Content-Type content="text/x-ms-odc; charset=utf-8">
 <meta name=ProgId content=ODC.Table>
@@ -165,7 +207,7 @@
       <odc:ConnectionString>Provider=MSOLAP.8;
       Integrated Security=ClaimsToken;
       Persist Security Info=True;
-      Initial Catalog=sobe_wowvirtualserver-${datasetIdClean()};
+      Initial Catalog=sobe_wowvirtualserver-${getDatasetId()}};
       Data Source=pbiazure://api.powerbi.com;
       MDX Compatibility=1;Safety Options=2;
       MDX Missing Member Mode=Error;
@@ -173,21 +215,18 @@
       Update Isolation Level=2</odc:ConnectionString>
       <odc:CommandType>Default</odc:CommandType>
       <odc:CommandText>
-        ${daxQuery()}
+        ${getDaxQuery()}
       </odc:CommandText>
     </odc:Connection>
   </odc:OfficeDataConnection>
 </xml>
 </head>
-</html>`;
+</html>`
+            );
         }
-        // Call update() on form keyup events
-        form.addEventListener('keyup', update);
 
-        // Call update() immediately
-        update();
+        // Go go go!
+        init();
     </script>
-
-    </body>
-
+</body>
 </html>

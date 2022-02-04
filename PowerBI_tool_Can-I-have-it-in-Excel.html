@@ -169,7 +169,7 @@
                 return getTableName().replace(/\n/g, "&#10;&#13;");
             }
 
-            return "evaluate " + getTableName().replace(/\n/g, "&#10;&#13;");
+            return "evaluate '" + getTableName().replace(/\n/g, "&#10;&#13;") + "'";
         }
 
         /**

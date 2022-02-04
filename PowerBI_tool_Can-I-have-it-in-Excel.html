@@ -113,7 +113,7 @@
 
             // Update githubUrl & sharing link
             const url = new URL('https://littlebigfrog.github.io/can-I-have-it-in-Excel');
-            url.searchParams.set("datasetIdInput", getDatasetId());
+            url.searchParams.set("datasetID", getDatasetId());
             url.searchParams.set("table", getDaxQuery());
 
             const link = get('sharingLink');
